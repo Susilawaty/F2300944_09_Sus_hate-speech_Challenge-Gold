@@ -3,6 +3,7 @@ Flask API Application
 """
 from flask import Flask, jsonify, request
 import pandas as pd
+from time import perf_counter
 from flasgger import Swagger, swag_from, LazyString, LazyJSONEncoder
 from db import (
     create_connection, insert_dictionary_to_db, 
@@ -55,7 +56,7 @@ def home():
     welcome_msg = {
         "version": "1.0.0",
         "message": "Welcome to Flask API",
-        "author": "Benedictus Aryo"
+        "author": "Susilawaty"
     }
     return jsonify(welcome_msg)
 
@@ -74,8 +75,12 @@ def cleansing_form():
     # Get text from input user
     raw_text = request.form["raw_text"]
     # Cleansing text
+    start = perf_counter()
     clean_text = text_cleansing(raw_text)
-    result_response = {"raw_text": raw_text, "clean_text": clean_text}
+    end = perf_counter()
+    time_elapse = end - start
+    print(f'processing time: {time_elapse}')
+    result_response = {"raw_text": raw_text, "clean_text": clean_text,"processing time": time_elapse}
     # Insert result to database
     db_connection = create_connection()
     insert_result_to_db(db_connection, raw_text, clean_text)
@@ -88,12 +93,22 @@ def cleansing_upload():
     # Get file from upload to dataframe
     uploaded_file = request.files['upload_file']
     # Read csv file to dataframe then cleansing
-    df_cleansing = cleansing_files(uploaded_file, encoding="latin-1")
+    # try:
+    #     df_upload = pd.read_csv(uploaded_file)
+    # except:
+    df_upload = pd.read_csv(uploaded_file, encoding="latin-1").head(100)
+    print("Read dataframe from Upload success!")
+    start = perf_counter()
+    df_cleansing = cleansing_files(df_upload)
+    end = perf_counter()
+    time_elapse = end - start
+    print(f'processing time: {time_elapse}')
     # Upload result to database
     db_connection = create_connection()
     insert_upload_result_to_db(db_connection, df_cleansing)
     print("Upload result to database success!")
-    result_response = df_cleansing.T.to_dict()
+    # Convert DataFrame to list of dictionaries
+    result_response = df_cleansing.to_dict(orient='records')
     return jsonify(result_response)
 
 if __name__ == '__main__':

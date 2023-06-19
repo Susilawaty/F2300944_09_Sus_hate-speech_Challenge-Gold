@@ -44,9 +44,12 @@ def insert_upload_result_to_db(conn, clean_df):
     clean_df.to_sql('cleansing_result', conn, if_exists='append', index=False)
     print("Inserting result to database success!")
     
-    
 def show_cleansing_result(conn):
     # Show cleansing result
     print("Showing cleansing result...")
     df = pd.read_sql_query("SELECT * FROM cleansing_result", conn)
     return df.T.to_dict()
+
+def get_abusive_data(conn):
+    df = pd.read_sql_query('SELECT * FROM abusive', conn)
+    return df
